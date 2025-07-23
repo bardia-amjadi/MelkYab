@@ -1,0 +1,39 @@
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=P@ssw0rd2025!
+    ports:
+      - "1433:1433"
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pidof sqlservr"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+
+  melkapi:
+    build:
+      context: .
+      dockerfile: MelkYab.Backend/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=MelkYabDb;User=sa;Password=P@ssw0rd2025!;Encrypt=false;MultipleActiveResultSets=true
+
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:

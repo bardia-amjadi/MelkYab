@@ -1,9 +1,0 @@
-.zoom-container {
-  background-color: #000;
-  text-align: center;
-}
-
-.zoom-image {
-  transition: transform 0.3s ease;
-  cursor: zoom-in;
-}

@@ -1,6 +1,7 @@
 
 using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Tables;
+using MelkYab.Backend.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,6 +40,9 @@ namespace MelkYab.Backend
             })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
+
+            builder.Services.AddScoped<IPropertiesRepository, SQLPropertiesRepository>();
+
 
             builder.Services.AddAuthentication();
 

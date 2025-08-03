@@ -42,7 +42,7 @@ namespace MelkYab.Backend
             .AddDefaultTokenProviders();
 
             builder.Services.AddScoped<IPropertiesRepository, SQLPropertiesRepository>();
-
+            builder.Services.AddScoped<IBookingsRepository, SQLBookingsRepository>();
 
             builder.Services.AddAuthentication();
 

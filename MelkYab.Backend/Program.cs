@@ -1,5 +1,7 @@
 
 using MelkYab.Backend.Data.DbContexts;
+using MelkYab.Backend.Data.Interfaces;
+using MelkYab.Backend.Data.Services;
 using MelkYab.Backend.Data.Tables;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,11 @@ namespace MelkYab.Backend
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
+
+            builder.Services.AddDbContext<AppDbContext>(...);
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

@@ -1,48 +1,90 @@
 ﻿using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Tables;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace MelkYab.Backend.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1")]
+    [Route("api/v{version:apiVersion}/bookings")]
     [ApiController]
     public class BookingsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly LinkGenerator _linkGenerator;
 
-        public BookingsController(AppDbContext context)
+        public BookingsController(AppDbContext context, LinkGenerator linkGenerator)
         {
             _context = context;
+            _linkGenerator = linkGenerator;
         }
 
-        // GET : api/bookings
+        // GET: api/v1/bookings
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Booking>>> GetBookings()
+        public async Task<ActionResult<IEnumerable<object>>> GetBookings()
         {
-            return await _context.Bookings
-                .Include(b => b.User)
-                .ToListAsync();
+            var bookings = await _context.Bookings.Include(b => b.User).ToListAsync();
+
+            var result = bookings.Select(b => new
+            {
+                booking = b,
+                links = new[]
+                {
+                    new {
+                        rel = "self",
+                        href = Url.Action(nameof(GetBooking), new { id = b.Id }),
+                        method = "GET"
+                    },
+                    new {
+                        rel = "update",
+                        href = Url.Action(nameof(UpdateBooking), new { id = b.Id }),
+                        method = "PUT"
+                    },
+                    new {
+                        rel = "delete",
+                        href = Url.Action(nameof(DeleteBooking), new { id = b.Id }),
+                        method = "DELETE"
+                    }
+                }
+            });
+
+            return Ok(result);
         }
 
-        // GET : api/bookings/{id}
+        // GET: api/v1/bookings/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Booking>> GetBooking(string id)
+        public async Task<ActionResult<object>> GetBooking(string id)
         {
-            var booking = await _context.Bookings
-                .Include(b => b.User)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            var booking = await _context.Bookings.Include(b => b.User).FirstOrDefaultAsync(b => b.Id == id);
 
             if (booking == null)
                 return NotFound();
 
-            return booking;
+            var links = new[]
+            {
+                new {
+                    rel = "self",
+                    href = Url.Action(nameof(GetBooking), new { id }),
+                    method = "GET"
+                },
+                new {
+                    rel = "update",
+                    href = Url.Action(nameof(UpdateBooking), new { id }),
+                    method = "PUT"
+                },
+                new {
+                    rel = "delete",
+                    href = Url.Action(nameof(DeleteBooking), new { id }),
+                    method = "DELETE"
+                }
+            };
+
+            return Ok(new { booking, links });
         }
 
-        // POST : api/bookings
+        // POST: api/v1/bookings
         [HttpPost]
-        public async Task<ActionResult<Booking>> CreateBooking(Booking booking)
+        public async Task<ActionResult<object>> CreateBooking([FromBody] Booking booking)
         {
             booking.Id = Guid.NewGuid().ToString();
             booking.CreatedAt = DateTime.UtcNow;
@@ -50,12 +92,26 @@ namespace MelkYab.Backend.Controllers
             _context.Bookings.Add(booking);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, booking);
+            var links = new[]
+            {
+                new {
+                    rel = "self",
+                    href = Url.Action(nameof(GetBooking), new { id = booking.Id }),
+                    method = "GET"
+                },
+                new {
+                    rel = "all-bookings",
+                    href = Url.Action(nameof(GetBookings)),
+                    method = "GET"
+                }
+            };
+
+            return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, new { booking, links });
         }
 
-        // PUT : api/bookings/{id}
+        // PUT: api/v1/bookings/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBooking(string id, Booking booking)
+        public async Task<IActionResult> UpdateBooking(string id, [FromBody] Booking booking)
         {
             if (id != booking.Id)
                 return BadRequest();
@@ -72,11 +128,10 @@ namespace MelkYab.Backend.Controllers
             existing.UserId = booking.UserId;
 
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
-        // DELETE : api/bookings/{id}
+        // DELETE: api/v1/bookings/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBooking(string id)
         {

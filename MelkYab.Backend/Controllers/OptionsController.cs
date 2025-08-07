@@ -1,13 +1,11 @@
 using MelkYab.Backend.Data.DbContexts;
-using MelkYab.Backend.Data.Tables;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace MelkYab.Backend.Controllers
 {
     [ApiVersion("1")]
-    [Route("api/v{version:apiversion}/[controller]")]
+    [Route("api/v{version:apiVersion}/options")]
     [ApiController]
     public class OptionsController : ControllerBase
     {
@@ -20,9 +18,8 @@ namespace MelkYab.Backend.Controllers
             _configuration = configuration;
         }
 
-        // GET: api/Options/Tables
-        [HttpGet("Tables")]
-        public IActionResult TablesLists()
+        [HttpGet("tables")]
+        public IActionResult GetTablesList()
         {
             try
             {
@@ -43,17 +40,28 @@ namespace MelkYab.Backend.Controllers
                     }
                 }
 
-                return Ok(tables);
+                var response = new
+                {
+                    tables,
+                    links = new[]
+                    {
+                        new { rel = "self", href = Url.Action(nameof(GetTablesList)), method = "GET" },
+                        new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
+                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration)), method = "POST" },
+                        new { rel = "test", href = Url.Action(nameof(Test)), method = "GET" }
+                    }
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest($"❌ Error getting tables: {ex.Message}");
+                return BadRequest(new { error = "Error getting tables", message = ex.Message });
             }
         }
 
-        // GET: api/Options/Last
-        [HttpGet("Last")]
-        public IActionResult LastMigrateInformation()
+        [HttpGet("migration/last")]
+        public IActionResult GetLastMigrationInfo()
         {
             try
             {
@@ -61,31 +69,28 @@ namespace MelkYab.Backend.Controllers
                     .GetAppliedMigrations()
                     .LastOrDefault();
 
-                if (lastMigration == null)
-                    return Ok("📭 No migrations applied yet.");
-
-                return Ok(new
+                var response = new
                 {
-                    LastMigration = lastMigration,
-                    CheckedAt = DateTime.UtcNow
-                });
+                    lastMigration,
+                    checkedAt = DateTime.UtcNow,
+                    links = new[]
+                    {
+                        new { rel = "self", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
+                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration)), method = "POST" },
+                        new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" }
+                    }
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                return BadRequest($"❌ Error getting last migration: {ex.Message}");
+                return BadRequest(new { error = "Error getting last migration", message = ex.Message });
             }
         }
 
-        // GET: api/Options/Test
-        [HttpGet("Test")]
-        public IActionResult Test()
-        {
-            return Ok("🧪 OptionsController is running correctly.");
-        }
-
-
-        [HttpGet("Migrate")]
-        public IActionResult MigrateDatabase()
+        [HttpPost("migration/run")]
+        public IActionResult RunMigration()
         {
             int maxRetries = 5;
             int delaySeconds = 5;
@@ -97,16 +102,50 @@ namespace MelkYab.Backend.Controllers
                     using var scope = HttpContext.RequestServices.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     db.Database.Migrate();
-                    return Ok("Migration completed");
+
+                    var response = new
+                    {
+                        message = "✅ Migration completed successfully.",
+                        links = new[]
+                        {
+                            new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
+                            new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" }
+                        }
+                    };
+
+                    return Ok(response);
                 }
                 catch (Exception ex)
                 {
                     if (i == maxRetries - 1)
-                        return StatusCode(500, $"Migration failed after retries: {ex}");
+                    {
+                        return StatusCode(500, new
+                        {
+                            error = "❌ Migration failed after maximum retries.",
+                            exception = ex.Message
+                        });
+                    }
+
                     Thread.Sleep(delaySeconds * 1000);
                 }
             }
-            return StatusCode(500, "Migration failed");
+
+            return StatusCode(500, new { error = "❌ Migration failed unexpectedly." });
+        }
+
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new
+            {
+                status = "🧪 OptionsController is running correctly.",
+                links = new[]
+                {
+                    new { rel = "self", href = Url.Action(nameof(Test)), method = "GET" },
+                    new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" },
+                    new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" }
+                }
+            });
         }
     }
 }

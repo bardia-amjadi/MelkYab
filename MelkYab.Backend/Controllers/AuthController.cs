@@ -1,28 +1,29 @@
 ﻿using MelkYab.Backend.Data.Dtos;
 using MelkYab.Backend.Data.Tables;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MelkYab.Backend.Controllers
 {
     [ApiVersion("1")]
-    [Route("api/v{version:apiversion}[controller]")]
+    [Route("api/v{version:apiVersion}/auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly LinkGenerator _linkGenerator;
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, LinkGenerator linkGenerator)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _linkGenerator = linkGenerator;
         }
 
-        // POST : api/auth/register
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody]RegisterDto model)
+        // POST: api/v1/auth
+        [HttpPost]
+        public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
             var user = new User
             {
@@ -36,31 +37,119 @@ namespace MelkYab.Backend.Controllers
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors);
-            }
+                return BadRequest(new
+                {
+                    errors = result.Errors,
+                    links = new[]
+                    {
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                    }
+                });
 
-            // Optionally sign in the user immediately:
             await _signInManager.SignInAsync(user, isPersistent: false);
 
-            return Ok(new { message = "User registered successfully" });
+            var meUrl = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth");
+
+            return Created(meUrl, new
+            {
+                message = "User registered successfully",
+                user.Email,
+                links = new[]
+                {
+                    new { rel = "self", method = "GET", href = meUrl },
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") },
+                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") }
+                }
+            });
         }
 
-        // POST : api/auth/login
+        // POST: api/v1/auth/login
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto model)
+        public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
-                return Unauthorized("Invalid login attempt.");
+                return Unauthorized(new
+                {
+                    message = "Invalid login attempt.",
+                    links = new[]
+                    {
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                    }
+                });
 
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, isPersistent: false, lockoutOnFailure: false);
-
+            var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, false, false);
             if (!result.Succeeded)
-                return Unauthorized("Invalid login attempt.");
+                return Unauthorized(new
+                {
+                    message = "Invalid login attempt.",
+                    links = new[]
+                    {
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                    }
+                });
 
-            // Return success
-            return Ok(new { message = "Login successful" });
+            return Ok(new
+            {
+                message = "Login successful",
+                user = new
+                {
+                    user.Id,
+                    user.Email,
+                    user.Fullname
+                },
+                links = new[]
+                {
+                    new { rel = "me", method = "GET", href = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth") },
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") }
+                }
+            });
+        }
+
+        // GET: api/v1/auth/me
+        [HttpGet("me")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return NotFound(new
+                {
+                    message = "User not found.",
+                    links = new[]
+                    {
+                        new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") },
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                    }
+                });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.Fullname,
+                user.Phone,
+                user.CreatedAt,
+                links = new[]
+                {
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") }
+                }
+            });
+        }
+
+        // DELETE: api/v1/auth/logout
+        [HttpDelete("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok(new
+            {
+                message = "Logout successful",
+                links = new[]
+                {
+                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") },
+                    new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                }
+            });
         }
     }
 }

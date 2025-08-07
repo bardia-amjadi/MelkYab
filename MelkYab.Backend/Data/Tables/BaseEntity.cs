@@ -7,6 +7,7 @@ namespace MelkYab.Backend.Data.Tables
 {
     public abstract class BaseEntity
     {
-        public int Id { get; set; }
+        [Key]
+        public string Id { get; set; }
     }
 }

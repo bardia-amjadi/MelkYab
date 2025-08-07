@@ -3,11 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MelkYab.Backend.Data.Tables
 {
-    public class Property
+    public class Property : BaseEntity
     {
-        [Key]
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-
         [Required]
         [MaxLength(200)]
         public string Title { get; set; }

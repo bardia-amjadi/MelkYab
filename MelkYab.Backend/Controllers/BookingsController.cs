@@ -1,5 +1,6 @@
 ﻿using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Tables;
+using MelkYab.Backend.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,45 +11,37 @@ namespace MelkYab.Backend.Controllers
     [ApiController]
     public class BookingsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IBookingsRepository bookingsRepository;
 
-        public BookingsController(AppDbContext context)
+        public BookingsController(IBookingsRepository bookingsRepository)
         {
-            _context = context;
+            this.bookingsRepository = bookingsRepository;
         }
 
         // GET : api/bookings
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Booking>>> GetBookings()
         {
-            return await _context.Bookings
-                .Include(b => b.User)
-                .ToListAsync();
+            var bookings=await bookingsRepository.GetAllBookingAsync();
+            return Ok(bookings);
         }
 
         // GET : api/bookings/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Booking>> GetBooking(string id)
         {
-            var booking = await _context.Bookings
-                .Include(b => b.User)
-                .FirstOrDefaultAsync(b => b.Id == id);
-
+            var booking = await bookingsRepository.GetBookingByIdAsync(id);
             if (booking == null)
                 return NotFound();
 
-            return booking;
+            return Ok(booking);
         }
 
         // POST : api/bookings
         [HttpPost]
         public async Task<ActionResult<Booking>> CreateBooking(Booking booking)
         {
-            booking.Id = Guid.NewGuid().ToString();
-            booking.CreatedAt = DateTime.UtcNow;
-
-            _context.Bookings.Add(booking);
-            await _context.SaveChangesAsync();
+            await bookingsRepository.CreateBookingAsync(booking);
 
             return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, booking);
         }
@@ -60,18 +53,9 @@ namespace MelkYab.Backend.Controllers
             if (id != booking.Id)
                 return BadRequest();
 
-            var existing = await _context.Bookings.FindAsync(id);
+            var existing = await bookingsRepository.UpdateBookingAsync(id, booking);
             if (existing == null)
                 return NotFound();
-
-            existing.CheckInDate = booking.CheckInDate;
-            existing.CheckOutDate = booking.CheckOutDate;
-            existing.Guests = booking.Guests;
-            existing.TotalPrice = booking.TotalPrice;
-            existing.Status = booking.Status;
-            existing.UserId = booking.UserId;
-
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -80,12 +64,9 @@ namespace MelkYab.Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBooking(string id)
         {
-            var booking = await _context.Bookings.FindAsync(id);
+            var booking = await bookingsRepository.DeleteBookingByIdAsync(id);
             if (booking == null)
                 return NotFound();
-
-            _context.Bookings.Remove(booking);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }

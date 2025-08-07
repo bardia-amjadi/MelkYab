@@ -1,5 +1,6 @@
-﻿using MelkYab.Backend.Data.DbContexts;
+﻿    using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Tables;
+using MelkYab.Backend.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,44 +11,35 @@ namespace MelkYab.Backend.Controllers
     [ApiController]
     public class PropertiesController : ControllerBase
     {
-        private readonly AppDbContext _context;
-
-        public PropertiesController(AppDbContext context)
+        private readonly IPropertiesRepository propertyRepository;
+        public PropertiesController(IPropertiesRepository propertyRepository)
         {
-            _context = context;
+            this.propertyRepository = propertyRepository;
         }
 
         // GET : api/properties
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Property>>> GetProperties()
         {
-            return await _context.Properties
-                .Include(p => p.CreatedByUser)
-                .ToListAsync();
+            var properties = await propertyRepository.GetAllPropertyAsync(); 
+            return Ok(properties);
         }
 
         // GET : api/properties/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Property>> GetProperty(string id)
         {
-            var property = await _context.Properties
-                .Include(p => p.CreatedByUser)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
+            var property = await propertyRepository.GetPropertyByIdAsync(id);
             if (property == null)
                 return NotFound();
-
-            return property;
+            return Ok(property);
         }
 
         // POST : api/properties
         [HttpPost]
         public async Task<ActionResult<Property>> CreateProperty(Property property)
         {
-            property.Id = Guid.NewGuid().ToString();
-            property.CreatedAt = DateTime.UtcNow;
-            _context.Properties.Add(property);
-            await _context.SaveChangesAsync();
+            await propertyRepository.CreatePropertyAsync(property);
 
             return CreatedAtAction(nameof(GetProperty), new { id = property.Id }, property);
         }
@@ -59,24 +51,9 @@ namespace MelkYab.Backend.Controllers
             if (id != property.Id)
                 return BadRequest();
 
-            var existing = await _context.Properties.FindAsync(id);
+            var existing = await propertyRepository.UpdatePropertyAsync(id, property);
             if (existing == null)
                 return NotFound();
-
-            // Update fields
-            existing.Title = property.Title;
-            existing.Description = property.Description;
-            existing.Type = property.Type;
-            existing.MaxGuests = property.MaxGuests;
-            existing.Bedrooms = property.Bedrooms;
-            existing.Beds = property.Beds;
-            existing.Bathrooms = property.Bathrooms;
-            existing.PricePerNight = property.PricePerNight;
-            existing.Address = property.Address;
-            existing.IsActive = property.IsActive;
-            existing.CreatedByUserId = property.CreatedByUserId;
-
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
@@ -85,12 +62,9 @@ namespace MelkYab.Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProperty(string id)
         {
-            var property = await _context.Properties.FindAsync(id);
+            var property = await propertyRepository.DeletePropertyByIdAsync(id);
             if (property == null)
                 return NotFound();
-
-            _context.Properties.Remove(property);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }

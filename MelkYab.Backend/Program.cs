@@ -22,7 +22,6 @@ namespace MelkYab.Backend
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            builder.Services.AddDbContext<AppDbContext>(...);
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));

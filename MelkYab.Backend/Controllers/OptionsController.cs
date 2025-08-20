@@ -18,6 +18,8 @@ namespace MelkYab.Backend.Controllers
             _configuration = configuration;
         }
 
+        private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";
+
         [HttpGet("tables")]
         public IActionResult GetTablesList()
         {
@@ -45,10 +47,10 @@ namespace MelkYab.Backend.Controllers
                     tables,
                     links = new[]
                     {
-                        new { rel = "self", href = Url.Action(nameof(GetTablesList)), method = "GET" },
-                        new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
-                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration)), method = "POST" },
-                        new { rel = "test", href = Url.Action(nameof(Test)), method = "GET" }
+                        new { rel = "self", href = Url.Action(nameof(GetTablesList), new { version = ApiVersion }), method = "GET" },
+                        new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo), new { version = ApiVersion }), method = "GET" },
+                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration), new { version = ApiVersion }), method = "POST" },
+                        new { rel = "test", href = Url.Action(nameof(Test), new { version = ApiVersion }), method = "GET" }
                     }
                 };
 
@@ -75,9 +77,9 @@ namespace MelkYab.Backend.Controllers
                     checkedAt = DateTime.UtcNow,
                     links = new[]
                     {
-                        new { rel = "self", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
-                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration)), method = "POST" },
-                        new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" }
+                        new { rel = "self", href = Url.Action(nameof(GetLastMigrationInfo), new { version = ApiVersion }), method = "GET" },
+                        new { rel = "run-migration", href = Url.Action(nameof(RunMigration), new { version = ApiVersion }), method = "POST" },
+                        new { rel = "tables", href = Url.Action(nameof(GetTablesList), new { version = ApiVersion }), method = "GET" }
                     }
                 };
 
@@ -108,8 +110,8 @@ namespace MelkYab.Backend.Controllers
                         message = "✅ Migration completed successfully.",
                         links = new[]
                         {
-                            new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" },
-                            new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" }
+                            new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo), new { version = ApiVersion }), method = "GET" },
+                            new { rel = "tables", href = Url.Action(nameof(GetTablesList), new { version = ApiVersion }), method = "GET" }
                         }
                     };
 
@@ -141,9 +143,9 @@ namespace MelkYab.Backend.Controllers
                 status = "🧪 OptionsController is running correctly.",
                 links = new[]
                 {
-                    new { rel = "self", href = Url.Action(nameof(Test)), method = "GET" },
-                    new { rel = "tables", href = Url.Action(nameof(GetTablesList)), method = "GET" },
-                    new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo)), method = "GET" }
+                    new { rel = "self", href = Url.Action(nameof(Test), new { version = ApiVersion }), method = "GET" },
+                    new { rel = "tables", href = Url.Action(nameof(GetTablesList), new { version = ApiVersion }), method = "GET" },
+                    new { rel = "last-migration", href = Url.Action(nameof(GetLastMigrationInfo), new { version = ApiVersion }), method = "GET" }
                 }
             });
         }

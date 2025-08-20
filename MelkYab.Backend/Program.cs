@@ -52,7 +52,7 @@ namespace MelkYab.Backend
 
             var app = builder.Build();
 
-            
+
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -60,7 +60,7 @@ namespace MelkYab.Backend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            
+
             app.UseHttpsRedirection();
 
             app.UseAuthorization();

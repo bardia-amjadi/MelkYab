@@ -21,6 +21,8 @@ namespace MelkYab.Backend.Controllers
             _linkGenerator = linkGenerator;
         }
 
+        private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";
+
         // POST: api/v1/auth
         [HttpPost]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
@@ -42,23 +44,23 @@ namespace MelkYab.Backend.Controllers
                     errors = result.Errors,
                     links = new[]
                     {
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
                     }
                 });
 
             await _signInManager.SignInAsync(user, isPersistent: false);
 
-            var meUrl = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth");
+            var meUrl = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth", new { version = ApiVersion });
 
-            return Created(meUrl, new
+            return Created(meUrl!, new
             {
                 message = "User registered successfully",
                 user.Email,
                 links = new[]
                 {
                     new { rel = "self", method = "GET", href = meUrl },
-                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") },
-                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") }
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth", new { version = ApiVersion }) },
+                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth", new { version = ApiVersion }) }
                 }
             });
         }
@@ -74,18 +76,18 @@ namespace MelkYab.Backend.Controllers
                     message = "Invalid login attempt.",
                     links = new[]
                     {
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
                     }
                 });
 
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, false, false);
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, false, false);
             if (!result.Succeeded)
                 return Unauthorized(new
                 {
                     message = "Invalid login attempt.",
                     links = new[]
                     {
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
                     }
                 });
 
@@ -100,8 +102,8 @@ namespace MelkYab.Backend.Controllers
                 },
                 links = new[]
                 {
-                    new { rel = "me", method = "GET", href = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth") },
-                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") }
+                    new { rel = "me", method = "GET", href = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth", new { version = ApiVersion }) },
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth", new { version = ApiVersion }) }
                 }
             });
         }
@@ -117,8 +119,8 @@ namespace MelkYab.Backend.Controllers
                     message = "User not found.",
                     links = new[]
                     {
-                        new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") },
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                        new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth", new { version = ApiVersion }) },
+                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
                     }
                 });
 
@@ -131,7 +133,7 @@ namespace MelkYab.Backend.Controllers
                 user.CreatedAt,
                 links = new[]
                 {
-                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth") }
+                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth", new { version = ApiVersion }) }
                 }
             });
         }
@@ -146,8 +148,8 @@ namespace MelkYab.Backend.Controllers
                 message = "Logout successful",
                 links = new[]
                 {
-                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth") },
-                    new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth") }
+                    new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth", new { version = ApiVersion }) },
+                    new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
                 }
             });
         }

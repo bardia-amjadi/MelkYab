@@ -32,17 +32,17 @@ namespace MelkYab.Backend.Controllers
                 {
                     new {
                         rel = "self",
-                        href = Url.Action(nameof(GetBooking), new { id = b.Id }),
+                        href = Url.Action(nameof(GetBooking), new { version= 1, id = b.Id }),
                         method = "GET"
                     },
                     new {
                         rel = "update",
-                        href = Url.Action(nameof(UpdateBooking), new { id = b.Id }),
+                        href = Url.Action(nameof(UpdateBooking), new { version= 1, id = b.Id }),
                         method = "PUT"
                     },
                     new {
                         rel = "delete",
-                        href = Url.Action(nameof(DeleteBooking), new { id = b.Id }),
+                        href = Url.Action(nameof(DeleteBooking), new {  version= 1,id = b.Id }),
                         method = "DELETE"
                     }
                 }
@@ -64,17 +64,17 @@ namespace MelkYab.Backend.Controllers
             {
                 new {
                     rel = "self",
-                    href = Url.Action(nameof(GetBooking), new { id }),
+                    href = Url.Action(nameof(GetBooking), new {  version= 1, id }),
                     method = "GET"
                 },
                 new {
                     rel = "update",
-                    href = Url.Action(nameof(UpdateBooking), new { id }),
+                    href = Url.Action(nameof(UpdateBooking), new { version= 1, id }),
                     method = "PUT"
                 },
                 new {
                     rel = "delete",
-                    href = Url.Action(nameof(DeleteBooking), new { id }),
+                    href = Url.Action(nameof(DeleteBooking), new {  version= 1, id }),
                     method = "DELETE"
                 }
             };
@@ -96,7 +96,7 @@ namespace MelkYab.Backend.Controllers
             {
                 new {
                     rel = "self",
-                    href = Url.Action(nameof(GetBooking), new { id = booking.Id }),
+                    href = Url.Action(nameof(GetBooking), new {  version= 1, id = booking.Id }),
                     method = "GET"
                 },
                 new {
@@ -106,7 +106,7 @@ namespace MelkYab.Backend.Controllers
                 }
             };
 
-            return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, new { booking, links });
+            return CreatedAtAction(nameof(GetBooking), new {  version= 1, id = booking.Id }, new { booking, links });
         }
 
         // PUT: api/v1/bookings/{id}

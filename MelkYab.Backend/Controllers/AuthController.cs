@@ -1,7 +1,12 @@
-﻿using MelkYab.Backend.Data.Dtos;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using MelkYab.Backend.Data.Dtos;
 using MelkYab.Backend.Data.Tables;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace MelkYab.Backend.Controllers
 {
@@ -13,11 +18,13 @@ namespace MelkYab.Backend.Controllers
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly LinkGenerator _linkGenerator;
+        private readonly IConfiguration _config;  // ← اینجا تزریق میشه
 
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, LinkGenerator linkGenerator)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration config,LinkGenerator linkGenerator)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _config = config;
             _linkGenerator = linkGenerator;
         }
 
@@ -70,72 +77,35 @@ namespace MelkYab.Backend.Controllers
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null)
-                return Unauthorized(new
-                {
-                    message = "Invalid login attempt.",
-                    links = new[]
-                    {
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
-                    }
-                });
+            if (user == null) return Unauthorized(new { message = "Invalid login." });
 
-            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, false, false);
-            if (!result.Succeeded)
-                return Unauthorized(new
-                {
-                    message = "Invalid login attempt.",
-                    links = new[]
-                    {
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
-                    }
-                });
+            var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+            if (!result.Succeeded) return Unauthorized(new { message = "Invalid login." });
+
+            var token = GenerateJwtToken(user);
 
             return Ok(new
             {
                 message = "Login successful",
-                user = new
-                {
-                    user.Id,
-                    user.Email,
-                    user.Fullname
-                },
-                links = new[]
-                {
-                    new { rel = "me", method = "GET", href = _linkGenerator.GetPathByAction("GetCurrentUser", "Auth", new { version = ApiVersion }) },
-                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth", new { version = ApiVersion }) }
-                }
+                token,
+                user = new { user.Id, user.Email, user.Fullname }
             });
         }
 
         // GET: api/v1/auth/me
+        [Authorize]
         [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return NotFound(new
-                {
-                    message = "User not found.",
-                    links = new[]
-                    {
-                        new { rel = "login", method = "POST", href = _linkGenerator.GetPathByAction("Login", "Auth", new { version = ApiVersion }) },
-                        new { rel = "register", method = "POST", href = _linkGenerator.GetPathByAction("Register", "Auth", new { version = ApiVersion }) }
-                    }
-                });
+            return Ok(new { user.Id, user.Email, user.Fullname });
+        }
 
-            return Ok(new
-            {
-                user.Id,
-                user.Email,
-                user.Fullname,
-                user.Phone,
-                user.CreatedAt,
-                links = new[]
-                {
-                    new { rel = "logout", method = "DELETE", href = _linkGenerator.GetPathByAction("Logout", "Auth", new { version = ApiVersion }) }
-                }
-            });
+        [Authorize(Roles = "Admin")]
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            return Ok(_userManager.Users.ToList());
         }
 
         // DELETE: api/v1/auth/logout
@@ -153,5 +123,30 @@ namespace MelkYab.Backend.Controllers
                 }
             });
         }
+
+        private string GenerateJwtToken(User user)
+        {
+            var claims = new[]
+            {
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim("fullname", user.Fullname ?? ""),
+        new Claim(ClaimTypes.Role, "User") // یا از Identity Role واقعی بخون
+    };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
     }
 }

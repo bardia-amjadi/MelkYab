@@ -1,10 +1,12 @@
-
 using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Interfaces;
 using MelkYab.Backend.Data.Services;
 using MelkYab.Backend.Data.Tables;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace MelkYab.Backend
 {
@@ -15,7 +17,6 @@ namespace MelkYab.Backend
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-
             builder.Services.AddControllers();
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -24,9 +25,9 @@ namespace MelkYab.Backend
 
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>)); 
+            builder.Services.AddScoped(typeof(IService<>), typeof(Service<>));
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            // Swagger + API Versioning
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddApiVersioning(options =>
@@ -35,6 +36,7 @@ namespace MelkYab.Backend
                 options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
             });
 
+            // Identity
             builder.Services.AddIdentity<User, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -46,13 +48,31 @@ namespace MelkYab.Backend
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
-            builder.Services.AddAuthentication();
+            // JWT Authentication
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
 
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                };
+            });
 
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
-
-
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -63,8 +83,9 @@ namespace MelkYab.Backend
 
             app.UseHttpsRedirection();
 
+            // اضافه شد: ترتیب مهمه → اول Authentication بعد Authorization
+            app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

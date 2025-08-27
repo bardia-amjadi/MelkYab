@@ -12,11 +12,14 @@ namespace MelkYab.Backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly LinkGenerator _linkGenerator;
+        private UnitOfWork UnitOfWork;
 
         public BookingsController(AppDbContext context, LinkGenerator linkGenerator)
         {
             _context = context;
             _linkGenerator = linkGenerator;
+            UnitOfWork = new(context);
+
         }
 
         // GET: api/v1/bookings

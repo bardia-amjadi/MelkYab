@@ -10,11 +10,13 @@ namespace MelkYab.Backend.Controllers
     [ApiController]
     public class PropertiesController : ControllerBase
     {
+        private UnitOfWork UnitOfWork;
         private readonly AppDbContext _context;
 
         public PropertiesController(AppDbContext context)
         {
             _context = context;
+            UnitOfWork = new(context);
         }
 
         private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";

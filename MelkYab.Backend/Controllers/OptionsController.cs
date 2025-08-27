@@ -9,6 +9,7 @@ namespace MelkYab.Backend.Controllers
     [ApiController]
     public class OptionsController : ControllerBase
     {
+        private UnitOfWork UnitOfWork;
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
@@ -16,6 +17,7 @@ namespace MelkYab.Backend.Controllers
         {
             _context = context;
             _configuration = configuration;
+            UnitOfWork = new();
         }
 
         private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";

@@ -1,6 +1,7 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MelkYab.Backend.Data.DbContexts;
 using MelkYab.Backend.Data.Dtos;
 using MelkYab.Backend.Data.Tables;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,7 @@ namespace MelkYab.Backend.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
+        private UnitOfWork UnitOfWork;
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly LinkGenerator _linkGenerator;
@@ -26,6 +28,7 @@ namespace MelkYab.Backend.Controllers
             _signInManager = signInManager;
             _config = config;
             _linkGenerator = linkGenerator;
+            UnitOfWork = new(signInManager, userManager, new());
         }
 
         private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";

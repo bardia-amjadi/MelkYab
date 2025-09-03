@@ -28,6 +28,7 @@ namespace MelkYab.Backend.Controllers
         {
             var bookings = await _context.Bookings.Include(b => b.User).ToListAsync();
 
+
             var result = bookings.Select(b => new
             {
                 booking = b,

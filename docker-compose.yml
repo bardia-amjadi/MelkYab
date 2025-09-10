@@ -24,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: MelkYab.Backend/Dockerfile
+    container_name: melkapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=MelkYabDb;User=sa;Password=P@ssw0rd2025!;Encrypt=false;TrustServerCertificate=true;MultipleActiveResultSets=true
@@ -35,6 +36,19 @@ services:
     networks:
       - mynetwork
 
+  melkfrontend:
+    build:
+      context: ./melkyab.frontend
+      dockerfile: Dockerfile
+    container_name: melkfrontend
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    tty: true
+    networks:
+      - mynetwork
+    depends_on:
+      - melkapi
 
 networks:
   mynetwork:

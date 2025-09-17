@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MelkYab.Backend.Data.Dtos;
 using MelkYab.Backend.Data.Tables;
 using Microsoft.AspNetCore.Identity;

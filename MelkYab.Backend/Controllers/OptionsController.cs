@@ -17,7 +17,7 @@ namespace MelkYab.Backend.Controllers
         {
             _context = context;
             _configuration = configuration;
-            UnitOfWork = new();
+            UnitOfWork = new(null,null,null);
         }
 
         private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";

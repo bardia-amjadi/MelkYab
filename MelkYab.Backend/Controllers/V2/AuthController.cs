@@ -28,7 +28,7 @@ namespace MelkYab.Backend.Controllers.V2
             _signInManager = signInManager;
             _config = config;
             _linkGenerator = linkGenerator;
-            UnitOfWork = new(signInManager, userManager, new());
+            UnitOfWork = new(signInManager, userManager, null);
         }
 
         private string ApiVersion => HttpContext.GetRequestedApiVersion()?.ToString() ?? "1";

@@ -6,7 +6,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/")
+    fetch("http://localhost:8000/api/v1/bookings")
       .then((res) => res.json())
       .then((result) => {
         setData(result);
@@ -33,17 +33,16 @@ function Dashboard() {
             <tr>
               <th>#</th>
               <th>نام</th>
-              <th>ایمیل</th>
-              <th>وبسایت</th>
+              <th>مهمان ها</th>
+              <th>قیمت</th>
             </tr>
           </thead>
           <tbody>
             {data.map((user, index) => (
               <tr key={user.id}>
                 <td>{index + 1}</td>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>{user.website}</td>
+                <td>{user.Guests}</td>
+                <td>{user.TotalPrice}</td>
               </tr>
             ))}
           </tbody>

@@ -17,6 +17,20 @@ namespace MelkYab.Backend
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // فرانت
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+
+
+
             builder.Services.AddControllers();
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -86,7 +100,7 @@ namespace MelkYab.Backend
             // اضافه شد: ترتیب مهمه → اول Authentication بعد Authorization
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.UseCors("AllowReact");
             app.MapControllers();
 
             app.Run();
